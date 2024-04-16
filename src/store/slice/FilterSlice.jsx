@@ -3,6 +3,7 @@ import { createSlice } from "@reduxjs/toolkit";
 const initialState = {
     keyWords: '',
     genre: 0,
+    filtered: false
 }
 
 const filter = createSlice({
@@ -14,10 +15,13 @@ const filter = createSlice({
         },
         searchKeyWord(state, action){
             state.keyWords = action.payload;
+        },
+        justFilter(state,action){
+            state.filtered = action.payload
         }
 
     }
 })
 
-export const {filterType, searchKeyWord}=filter.actions;
+export const {filterType, searchKeyWord, justFilter}=filter.actions;
 export default filter.reducer;

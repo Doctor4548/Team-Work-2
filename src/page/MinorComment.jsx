@@ -76,11 +76,19 @@ export default function MinorComment(props) {
         }).then((data)=>{
             if(data.data.data==='已点赞'&&!displayLikedComments.includes(cid)){
                 setDisplayLikedComments((old)=>{return [...old, cid]})
+            }else if (data.data.data==='还没点赞'&&displayLikedComments.includes(cid)){
+                let temp = displayLikedComments.slice();
+                temp = temp.filter((item)=>{
+                    return item!==cid
+                });
+                setDisplayLikedComments(temp);
+                //console.log(cid, temp);
             }
         }).catch((err)=>{
             console.log(err);
         })
     }
+
 
 
     async function replyTheComment() {
@@ -100,8 +108,8 @@ export default function MinorComment(props) {
             }
 
         }).then((code) => {
-            console.log(code);
             setReply('');
+            setSecondCommentContnent('');
             dispatch(minorCommentStatus());
             setLoading(false);
 
@@ -158,7 +166,7 @@ export default function MinorComment(props) {
         color: 'red'
     }
 
-    async function disLikeTheComment(cid){//疑似跨域问题
+    async function disLikeTheComment(cid){
         setLoading(true);
         await axios({
             headers: {
@@ -173,7 +181,6 @@ export default function MinorComment(props) {
 
         }).then((data)=>{
             setLoading(false);
-            console.log(data);
             
         }).catch((err)=>{
             setLoading(false);
@@ -213,14 +220,14 @@ export default function MinorComment(props) {
                         }
 
                                 {reply === item.cid ?
-                                    <div className="comment-response" onClick={() => { setReply('') }}>Cancel</div> :
+                                    <div className="comment-response" onClick={() => { setReply(''); setSecondCommentContnent('') }}>Cancel</div> :
                                     <div className="comment-response" onClick={() => { setReply(item.cid) }}>Reply</div>
                                 }
                             </div>
                             {
                                 reply === item.cid ?
                                     <div className="reply-content">
-                                        <textarea disabled={userToken===''} className="reply" placeholder="Reply to the user" value={secondCommentContent} onChange={(e) => { setSecondCommentContnent(e.target.value) }} ></textarea>
+                                        <textarea disabled={userToken===''} className="reply" placeholder="Reply to the user" value={secondCommentContent=== ''? `@${item.username} ${secondCommentContent}` : secondCommentContent} onChange={(e) => { setSecondCommentContnent(e.target.value) }} ></textarea>
                                         <button disabled={userToken===''||secondCommentContent===''} className="reply-button" onClick={() => { replyTheComment() }}>Reply</button>
                                     </div>
                                     :
@@ -257,14 +264,14 @@ export default function MinorComment(props) {
                         }
 
                         {reply === minorComments.rows[0].cid ?
-                            <div className="comment-response" onClick={() => { setReply('') }}>Cancel</div> :
+                            <div className="comment-response" onClick={() => { setReply(''); setSecondCommentContnent('') }}>Cancel</div> :
                             <div className="comment-response" onClick={() => { setReply(minorComments.rows[0].cid) }}>Reply</div>
                         }
                     </div>
                     {
                         reply === minorComments.rows[0].cid ?
                             <div className="reply-content">
-                                <textarea disabled={userToken===''} className="reply" placeholder="Reply to the user" value={secondCommentContent} onChange={(e) => { setSecondCommentContnent(e.target.value) }} ></textarea>
+                                <textarea disabled={userToken===''} className="reply" placeholder="Reply to the user" value={secondCommentContent=== ''? `@${minorComments.rows[0].username} ${secondCommentContent}` : secondCommentContent} onChange={(e) => { setSecondCommentContnent(e.target.value) }} ></textarea>
                                 <button disabled={userToken===''||secondCommentContent===''} className="reply-button" onClick={() => { replyTheComment() }}>Reply</button>
                             </div>
                             :

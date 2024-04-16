@@ -1,28 +1,28 @@
 import React from "react";
-import { useParams, useLocation } from "react-router-dom";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { filterType, searchKeyWord } from "../store/slice/FilterSlice";
+import { filterType, justFilter } from "../store/slice/FilterSlice";
 import { enterNewPage } from "../store/slice/VisitedPageSlice";
 import axios from "axios";
 
 export default function Musics() {
-    const { choose } = useParams();
-    const [searchParams] = useSearchParams();
+    const {choose} = useParams();
 
     const location = useLocation();
     const dispatch = useDispatch();
     const navigate = useNavigate();
 
-    const genre = useSelector((state)=>{return state.filter.genre});
-    const keyWords = useSelector((state)=>{return state.filter.keyWords});
-
+    
+    const genre = useSelector((state) => { return state.filter.genre });
+    const keyWords = useSelector((state) => { return state.filter.keyWords });
+    const filtered = useSelector((state)=>{return state.filter.filtered})
 
     const [musicGenres, setMusicGenres] = React.useState([]);
     const [musicList, setMusicList] = React.useState([]);
     const [pageNum, setPageNum] = React.useState(1);
-    const [displayAllMusics, setDisplayAllMusics] = React.useState(false);
     const [secondLoading, setSecondLoading] = React.useState(false);
+
+    const [lastScrollY, setLastScrollY]=React.useState(0);
 
 
     const genres = musicGenres.map((item) => {
@@ -35,6 +35,7 @@ export default function Musics() {
         //console.log(searchParams.toString());        
         //navigate(`../${choose}?searchGenre=`);
         dispatch(filterType(genreID));
+        dispatch(justFilter(true));
     }
 
     async function getMusicGenres() {
@@ -55,17 +56,17 @@ export default function Musics() {
     }
 
     const musics = musicList.map((item) => {
-        return(
-        <div className="page-music" onClick={() => { gotoSpecific(item.sid) }} key={item.sid}>
-            <img src={item.image} className="page-music-image"></img>
-            <span className="music-title">{item.title}</span>
-        </div>
+        return (
+            <div className="page-music" onClick={() => { gotoSpecific(item.sid) }} key={item.sid}>
+                <img src={item.image} className="page-music-image"></img>
+                <span className="music-title">{item.title}</span>
+            </div>
         )
     })
 
 
     async function getMusic() {
-        if(genre>0&&keyWords!==''){
+        if (genre > 0 && keyWords !== '') {
             await axios({
                 headers: {
                     'Content-Type': "application/json",
@@ -75,20 +76,27 @@ export default function Musics() {
                 data: {
                     keyWords: keyWords,
                     genre: genre.toString(),
-                    pageNum: pageNum,                    
+                    pageNum: pageNum,
                 }
 
             }).then((code) => {
-                setMusicList((old)=>{
-                    return [...old, ...code.data.data.rows]
-                })
 
-                if(code.data.data.pageNum*code.data.data.pageSize>=code.data.data.total){
-                    setDisplayAllMusics(true);
+                if(code.data.data.rows.length>0){
+                    setSecondLoading(false);
                 }
 
+                if(filtered){
+                    setMusicList(code.data.data.rows);
+                }else{
+                    setMusicList((old) => {
+                        return [...old, ...code.data.data.rows]
+                    })
+                }
+
+                dispatch(justFilter(false));
+
             })
-        }else if(genre > 0){
+        } else if (genre > 0) {
             await axios({
                 headers: {
                     'Content-Type': "application/json",
@@ -96,21 +104,30 @@ export default function Musics() {
                 method: "POST",
                 url: "http://47.251.46.15/songs",
                 data: {
-                    genre: genre.toString(), 
-                    pageNum: pageNum,                   
+                    genre: genre.toString(),
+                    pageNum: pageNum,
                 }
 
             }).then((code) => {
-                setMusicList((old)=>{
-                    return [...old, ...code.data.data.rows]
-                })
 
-                if(code.data.data.pageNum*code.data.data.pageSize>=code.data.data.total){
-                    setDisplayAllMusics(true);
+                if(code.data.data.rows.length>0){
+                    setSecondLoading(false);
                 }
 
+                if(filtered){
+                    setMusicList(code.data.data.rows);
+                }else{
+                    setMusicList((old) => {
+                        return [...old, ...code.data.data.rows]
+                    })
+                }
+
+                dispatch(justFilter(false));
+                
+
+
             })
-        }else if(keyWords!==''){
+        } else if (keyWords !== '') {
             await axios({
                 headers: {
                     'Content-Type': "application/json",
@@ -123,16 +140,23 @@ export default function Musics() {
                 }
 
             }).then((code) => {
-                setMusicList((old)=>{
-                    return [...old, ...code.data.data.rows]
-                })
-
-                if(code.data.data.pageNum*code.data.data.pageSize>=code.data.data.total){
-                    setDisplayAllMusics(true);
+                if(code.data.data.rows.length>0){
+                    setSecondLoading(false);
                 }
 
+                if(filtered){
+                    setMusicList(code.data.data.rows);
+                }else{
+                    setMusicList((old) => {
+                        return [...old, ...code.data.data.rows]
+                    })
+                }
+
+                dispatch(justFilter(false));
+
+
             })
-        }else{
+        } else {
             await axios({
                 headers: {
                     'Content-Type': "application/json",
@@ -144,40 +168,73 @@ export default function Musics() {
                 }
 
             }).then((code) => {
-
-                setMusicList((old)=>{
-                    return [...old, ...code.data.data.rows]
-                })
-
-                if(code.data.data.pageNum*code.data.data.pageSize>=code.data.data.total){
-                    setDisplayAllMusics(true);
+                if(code.data.data.rows.length>0){
+                    setSecondLoading(false);
                 }
-                
+
+                if(filtered){
+                    setMusicList(code.data.data.rows);
+                }else{
+                    setMusicList((old) => {
+                        return [...old, ...code.data.data.rows]
+                    })
+                }
+
+                dispatch(justFilter(false));
+
+
+
+                /*if(code.data.data.pageNum*code.data.data.pageSize>=code.data.data.total){
+                    setDisplayAllMusics(true);
+                }*/
+
             })
         }
     }
+    
 
 
-    window.onscroll = function() {
+    window.onscroll = function () {
         // 判断是否滚动到页面底部
-        if (window.innerHeight + window.scrollY >= document.body.offsetHeight && !displayAllMusics) {
-            console.log(pageNum);
+        if(choose === 'placeholder'){
+            if(window.scrollY>lastScrollY){
 
-          setPageNum((old)=>(old+1));
-          setSecondLoading(true);
-
+                if (!secondLoading && window.innerHeight + window.scrollY >= document.body.offsetHeight) {
+                    setPageNum((old) => (old + 1));
+                    setSecondLoading(true);
+    
+                    window.scrollTo({
+                        top: lastScrollY-30,
+                        behavior: "smooth"
+                    })
+                }
+        
+            }
+            setLastScrollY(window.scrollY);
         }
-      };
+
+
+    };
 
 
     React.useEffect(() => {
+
+        if(filtered){            
+            setPageNum(1);
+            setSecondLoading(false);
+            setLastScrollY(0);
+            setMusicList([]);
+        }
+
         getMusicGenres();
         getMusic();
     }, [genre, keyWords, pageNum]);
 
-    React.useEffect(()=>{
+
+
+    React.useEffect(() => {
         searchGenre(0)
-    },[])
+    }, [])
 
     function gotoSpecific(id) {
         const path = location.pathname;

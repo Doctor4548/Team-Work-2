@@ -6,7 +6,7 @@ import { useNavigate } from "react-router";
 
 import { AudioOutlined } from '@ant-design/icons';
 import { Input, Space } from 'antd';
-import { searchKeyWord } from "../store/slice/FilterSlice";
+import { searchKeyWord, justFilter } from "../store/slice/FilterSlice";
 
 export default function Headers() {
     const dispatch = useDispatch();
@@ -30,6 +30,7 @@ export default function Headers() {
 
     const onSearch = (value, _e, info) => {
         dispatch(searchKeyWord(value));
+        dispatch(justFilter(true));
     }
 
     const { Search } = Input;
